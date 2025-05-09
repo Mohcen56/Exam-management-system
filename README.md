@@ -63,5 +63,14 @@ python manage.py createsuperuser
 # 7. Run the Server
 python manage.py runserver
 
+## 🧪 Testing
+
+- JavaScript tested with **Jest + jsdom**
+- Django views tested with Django’s built-in `TestCase`
+- To run JS tests:
+
+```bash
+npm install
+npm test
 
 
