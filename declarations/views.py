@@ -1,3 +1,4 @@
+import datetime
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -9,6 +10,8 @@ from django.contrib.auth.models import Group
 import openpyxl
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from openpyxl.utils.datetime import from_excel
+
 
 
 @login_required
@@ -27,12 +30,12 @@ def upload_resit_schedule(request):
                 workbook = openpyxl.load_workbook(excel_file)
                 worksheet = workbook.active
                 headers = [cell.value.lower() if cell.value else '' for cell in next(worksheet.iter_rows(min_row=1, max_row=1))]
-                expected_headers = ['course id', 'course name', 'place', 'date']
+                expected_headers = ['course id', 'course name', 'place', 'date', 'time']
 
                 if not all(header in headers for header in expected_headers):
                     return JsonResponse({
                         'status': 'error',
-                        'message': 'Excel file must contain columns: Course ID, Course Name, Place, Date.'
+                        'message': 'Excel file must contain columns: Course ID, Course Name, Place, Date, Time.'
                     }, status=400)
 
                 col_indices = {header: headers.index(header) for header in expected_headers}
@@ -43,40 +46,53 @@ def upload_resit_schedule(request):
                         course_id = data_row[col_indices['course id']].value
                         course_name = data_row[col_indices['course name']].value
                         place = data_row[col_indices['place']].value
-                        date = data_row[col_indices['date']].value
+                        date_raw = data_row[col_indices['date']].value
+                        time_raw = data_row[col_indices['time']].value
+
+                        if not all([course_id, course_name, place, date_raw, time_raw]):
+                            errors.append(f"Row {row_idx}: All fields are required.")
+                            continue
 
                         try:
-                            course_code = str(course_id).strip()
-                            course = Course.objects.get(code=course_code)
-                            if course_name and str(course_name).strip().lower() != course.name.lower():
-                                errors.append(f"Row {row_idx}: Course name '{course_name}' does not match Course ID {course_id}.")
+                            course = Course.objects.get(code=str(course_id).strip())
+                            if str(course_name).strip().lower() != course.name.lower():
+                                errors.append(f"Row {row_idx}: Course name mismatch for ID {course_id}.")
                                 continue
-                        except (ValueError, TypeError):
-                            errors.append(f"Row {row_idx}: Invalid Course ID: {course_id}.")
-                            continue
                         except Course.DoesNotExist:
                             errors.append(f"Row {row_idx}: Course with ID {course_id} not found.")
                             continue
 
-                        place = str(place).strip() if place else ''
-                        date = str(date).strip() if date else ''
-                        if not place or not date:
-                            errors.append(f"Row {row_idx}: Place and Date are required.")
-                            continue
+                        # Robust date/time parsing
+                        try:
+                            if isinstance(date_raw, str):
+                                date_parsed = datetime.strptime(date_raw.strip(), '%Y-%m-%d').date()
+                            elif hasattr(date_raw, 'date'):
+                                date_parsed = date_raw.date()
+                            else:
+                                date_parsed = date_raw
 
-                        if len(place) + len(date) + 2 > 100:
-                            errors.append(f"Row {row_idx}: Combined Place and Date exceed 100 characters.")
+                            if isinstance(time_raw, str):
+                                time_parsed = datetime.strptime(time_raw.strip(), '%H:%M').time()
+                            elif isinstance(time_raw, (int, float)):
+                                time_parsed = from_excel(time_raw).time()
+                            elif hasattr(time_raw, 'time'):
+                                time_parsed = time_raw.time()
+                            else:
+                                time_parsed = time_raw
+                        except Exception as e:
+                            errors.append(f"Row {row_idx}: Failed to parse date/time - {e}")
                             continue
 
                         ResitExamSchedule.objects.update_or_create(
                             course=course,
                             defaults={
-                                'place': place,
-                                'date': date
+                                'place': place.strip(),
+                                'date': date_parsed,
+                                'time': time_parsed
                             }
                         )
                     except Exception as e:
-                        errors.append(f"Row {row_idx}: Error processing data: {str(e)}")
+                        errors.append(f"Row {row_idx}: {str(e)}")
 
                 if errors:
                     return JsonResponse({'status': 'error', 'message': '\n'.join(errors)}, status=400)
@@ -85,11 +101,38 @@ def upload_resit_schedule(request):
 
             except Exception as e:
                 return JsonResponse({'status': 'error', 'message': f'Error processing Excel file: {str(e)}'}, status=500)
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Invalid form submission.'}, status=400)
-    else:
-        form = ExcelUploadForm()
-        return render(request, 'facultysecexam.html', {'form': form})
+
+        return JsonResponse({'status': 'error', 'message': 'Invalid form submission.'}, status=400)
+
+    form = ExcelUploadForm()
+    return render(request, 'facultysecexam.html', {'form': form})
+
+
+
+@login_required
+def get_resit_schedule(request):
+    if not request.user.groups.filter(name='student').exists():
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access.'}, status=403)
+
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    schedule = {day: [] for day in days}  # ⬅ Make each day an empty list
+
+    resits = ResitExamSchedule.objects.select_related('course')
+
+    for resit in resits:
+        try:
+            day_name = resit.date.strftime('%A')
+            if day_name in schedule:
+                time_str = resit.time.strftime('%H:%M') if resit.time else 'Time not set'
+                schedule[day_name].append({
+                    'course': f"{resit.course.code} {resit.course.name}",
+                    'date': f"{resit.date.strftime('%Y-%m-%d')} {time_str}",
+                    'place': resit.place
+                })
+        except Exception:
+            continue
+
+    return JsonResponse({'status': 'success', 'schedule': schedule})
 
 
 @require_POST
@@ -171,3 +214,37 @@ def resitannouncement(request):
 
 def facultysecexam(request):
     return render(request, 'facultysecexam.html')
+
+@login_required
+def studentshedule(request):
+    if not request.user.groups.filter(name='student').exists():
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized access.'}, status=403)
+
+    weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    schedule_by_day = {day: [] for day in weekdays}
+
+    resits = ResitExamSchedule.objects.select_related('course')
+    contents = ResitExamContent.objects.select_related('course')
+
+    # Map content by course_id
+    content_map = {c.course_id: c for c in contents}
+
+    for resit in resits:
+        day = resit.date.strftime('%A')
+        if day in schedule_by_day:
+            course_id = resit.course_id
+            content = content_map.get(course_id)
+            
+            schedule_by_day[day].append({
+                'course': f"{resit.course.code} {resit.course.name}",
+                'date': resit.date.strftime('%Y-%m-%d'),
+                'time': resit.time.strftime('%H:%M') if resit.time else '',
+                'place': resit.place,
+                'content': content  # this is safe to pass to the template
+            })
+
+    return render(request, 'studentschedule.html', {
+        'weekdays': weekdays,
+        'schedule_by_day': schedule_by_day
+    })
+

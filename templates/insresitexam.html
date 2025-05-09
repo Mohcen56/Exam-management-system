@@ -133,7 +133,9 @@
         <form method="post" enctype="multipart/form-data" action="{% url 'upload_grades' course.id %}">
           {% csrf_token %}
           <p><strong>Upload Grades</strong> (Excel)</p>
-          <input type="file" name="grade_file" class="form-control" id="inputGroupFile04_{{ course.id }}" accept=".xlsx, .xls">
+          <a href="{% static 'assets/sample_grade_upload.xlsx' %}" class="btn btn-outline-success w-70" download>Download Excel Template</a>
+          <p>Note: Please ensure that the Excel file is in the correct format or use the Template above.</p>
+          <input type="file" name="grade_file" class="form-control"class="btn btn-success w-100" id="inputGroupFile04_{{ course.id }}" accept=".xlsx, .xls">
           <button type="button" onclick="uploadExcel({{ course.id }})">Upload</button>
         </form>
       </div>
@@ -149,7 +151,9 @@
         <form method="post" enctype="multipart/form-data" action="{% url 'upload_resit_details' course.id %}">
           {% csrf_token %}
           <p><strong>Upload Resit Exam Details</strong> (Excel)</p>
-          <a href="{% static 'assets/resit_exam_details_template.xlsx' %}" class="download-link" download>Download Excel Template</a>
+          <a href="{% static 'assets/resit_exam_details_template.xlsx' %}" class="btn btn-outline-success w-70" download>Download Excel Template</a>
+          
+          <p>Note: Please ensure that the Excel file is in the correct format or use the Template above.</p>
           <input type="file" name="excel_file" class="form-control" id="excel_file_{{ course.id }}" accept=".xlsx, .xls">
           <button type="button" onclick="uploadResitExamDetails({{ course.id }})">Upload</button>
         </form>

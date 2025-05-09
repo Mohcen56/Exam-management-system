@@ -5,7 +5,8 @@ from exams.models import Course
 class ResitExamSchedule(models.Model):
     course = models.OneToOneField(Course, on_delete=models.CASCADE)
     place = models.CharField(max_length=100)
-    date = models.CharField(max_length=100)  # or DateField if it's always a date
+    date = models.DateField()  
+    time = models.TimeField()  
 
 class ResitExamContent(models.Model):
     course = models.OneToOneField(Course, on_delete=models.CASCADE)

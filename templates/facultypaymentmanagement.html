@@ -9,51 +9,7 @@
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
-  <style>
-    .form-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .form-row input {
-      flex: 1;
-      min-width: 140px;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 0.95rem;
-    }
-
-    .year-checkboxes {
-        display: grid;
-        grid-template-columns: repeat(3, auto);
-        gap: 10px 20px;
-        margin-top: 8px;
-      }
-      
-      .year-checkboxes label {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 0.9rem;
-      }
-      
-
-    .year-checkboxes label {
-      display: block;
-      margin: 2px 0;
-    }
-
-   
-    table {
-    
-      margin-bottom: 25px;
-    }
-  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
 <body>
   <nav class="navbar">
@@ -66,13 +22,12 @@
         </div>
     </div>
     <div class="navbar-center">
-        <ul class="nav-links">
-            <li><a href="{% url 'faculty_page' %}"><span class="nav-icon">📊</span>Dashboard</a></li>
-            <li><a href="{% url 'faculty_payment' %}"class="active"><span class="nav-icon">📅</span>add student</a></li>
-            <li><a href="{% url 'facultysecanoun' %}" ><span class="nav-icon">📝</span>Announcements</a></li>
-            <li><a href="{% url 'facultysecexam' %}"><span class="nav-icon">📅</span>exam Schedule</a></li>
-            
-        </ul>
+      <ul class="nav-links">
+        <li><a href="{% url 'faculty_page' %}"><i class="bi bi-house-fill me-2"></i>Dashboard</a></li>
+        <li><a href="{% url 'faculty_payment' %}"  class="active"><i class="bi bi-person-fill-add me-2"></i>Add Student</a></li>
+        <li><a href="{% url 'facultysecanoun' %}"><i class="bi bi-megaphone-fill me-2"></i>Announcements</a></li>
+        <li><a href="{% url 'facultysecexam' %}"><i class="bi bi-calendar-plus me-2"></i>Exam Schedule</a></li>
+    </ul>
     </div>
     <div class="navbar-right">
         <span class="user-email">{{ request.user.email }}</span>
@@ -153,7 +108,7 @@
       </div>
     </div>
     <div class="col-md-3 col-sm-12">
-      <a href="{% static 'assets/sample_student_upload.xlsx' %}" class="btn btn-primary w-100" download>
+      <a href="{% static 'assets/sample_student_upload.xlsx' %}" class="btn btn-success w-100" download>
         Download Excel Template
       </a>
     </div>

@@ -110,14 +110,22 @@
   <main class="container" data-upload-url="{% url 'upload_resit_schedule' %}">
     <h1 class="page-title"> 📂 Upload Resit Exam Schedule</h1>
     <div class="card">
-      <p>Please upload the official resit schedule file (Excel).</p>
+     <p><i class="bi bi-file-earmark-arrow-up me-2"></i>Please upload the official resit schedule file (Excel).</p>
+
+      
       <div class="input-group">
         {% csrf_token %}
         <input type="file" class="form-control" id="scheduleFile" accept=".xlsx" aria-label="Upload">
-        <button class="btn btn-outline-primary" type="button" onclick="uploadFile()">Upload</button>
+        <button class="btn btn-outline-primary " type="button" onclick="uploadFile()">Upload</button>
       </div>
       <div class="file-preview" id="filePreview"></div>
       <div class="confirmation" id="confirmationMsg"></div>
+      
+      <p class="mt-3 mb-2"><i class="bi bi-file-earmark-arrow-up me-2"></i>Please use the following template to ensure the schedule is in the correct format:</p>
+
+      <a href="{% static 'assets/resit_exam_schedule.xlsx' %}" class="btn btn-outline-success" download>
+        Download Excel Template
+      </a>
     </div>
   </main>
   

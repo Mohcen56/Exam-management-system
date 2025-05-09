@@ -1,38 +1,39 @@
 
 function postAnnouncement() {
-    const title = document.getElementById("announcementTitle").value;
-    const text = document.getElementById("announcementText").value;
+  const title = document.getElementById("announcementTitle").value;
+  const text = document.getElementById("announcementText").value;
 
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("text", text);
+  const formData = new FormData();
+  formData.append("title", title);
+  formData.append("text", text);
 
-    fetch("/courses/post_announcement/", {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken")
-        },
-        body: formData
-    })
+  return fetch("/courses/post_announcement/", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken")
+    },
+    body: formData
+  })
     .then(res => {
-        if (!res.ok) {
-            throw new Error("Server error: " + res.status);
-        }
-        return res.json();
+      if (!res.ok) {
+        throw new Error("Server error: " + res.status);
+      }
+      return res.json();
     })
     .then(data => {
-        if (data.status === "success") {
-            alert("Announcement posted!");
-            document.getElementById("announcementTitle").value = "";
-            document.getElementById("announcementText").value = "";
-        } else {
-            alert("Error: " + data.message);
-        }
+      if (data.status === "success") {
+        showSuccess("Announcement posted!");
+        document.getElementById("announcementTitle").value = "";
+        document.getElementById("announcementText").value = "";
+      } else {
+        showError(data.message);
+      }
     })
     .catch(error => {
-        alert("Something went wrong: " + error.message);
+      alert("Something went wrong: " + error.message);
     });
 }
+
 
 document.querySelector(".publish").addEventListener("click", postAnnouncement);
 
@@ -81,34 +82,45 @@ function uploadFile() {
 
   
 
-function deleteStudent(studentId, button) {
+  function deleteStudent(studentId, button) {
     console.log("Deleting student ID:", studentId);
   
-    if (!confirm('Are you sure you want to delete this student?')) return;
+    Swal.fire({
+      title: "Are you sure?",
+      text: "This student will be deleted.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (!result.isConfirmed) return;
   
-    const formData = new FormData();
-    formData.append("id", studentId);
+      const formData = new FormData();
+      formData.append("id", studentId);
   
-    fetch('/exams/delete_grade/', {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': csrftoken   // 👈 ADD this line
-      },
-      body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.status === "success") {
-        button.closest('tr').remove();
-      } else {
-        alert('Error: ' + data.message);
-      }
-    })
-    .catch(error => {
-      console.error('Error deleting student:', error);
-      alert('Something went wrong.');
+      fetch("/exams/delete_grade/", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrftoken,
+        },
+        body: formData,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "success") {
+            button.closest("tr").remove();
+            showSuccess("Student deleted successfully.");
+          } else {
+            showError(data.message);
+          }
+        })
+        .catch((error) => {
+          console.error("Error deleting student:", error);
+          showError("Something went wrong.");
+        });
     });
   }
+  
  
    
  
@@ -117,3 +129,14 @@ function deleteStudent(studentId, button) {
     const rows = document.querySelectorAll("#allStudentsTable tbody tr");
     rows.forEach(row => row.style.display = "");
   }
+
+module.exports = {
+  postAnnouncement,
+  uploadFile,
+  deleteStudent,
+  resetAllStudentsTable,
+};
+
+
+
+

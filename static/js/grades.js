@@ -118,11 +118,11 @@ function uploadResitExcel(courseId) {
     })
     .then(response => response.json())
     .then(data => {
-      alert(data.message || 'Upload completed!');
+      showSuccess(data.message || 'Upload completed!');
     })
     .catch(error => {
       console.error('Upload error:', error);
-      alert('An error occurred during upload.');
+      showError('An error occurred during upload.');
     });
   }  
 

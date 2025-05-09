@@ -39,6 +39,11 @@
             <i class="bi bi-info-circle-fill"></i>Resit Exams
           </a>
         </li>
+          <li>
+            <a href="{% url 'studentshedule' %}" class="modern-button">
+              <i class="bi bi-megaphone"></i> Schedule
+              </a>
+          </li>
       </ul>
     </div>
     <div class="navbar-right">
@@ -78,7 +83,7 @@
                     <td>{{ detail.schedule.course.code }}</td>
                     <td>{{ detail.schedule.course.name }}</td>
                     <td>
-                      {{ detail.schedule.place|default:"TBA" }} at {{ detail.schedule.date|default:"TBA" }}
+                      {{ detail.schedule.place|default:"TBA" }} at {{ detail.schedule.date|date:"Y-m-d" }} {{ detail.schedule.time|time:"H:i" }}
                     </td>
                     <td class="exam-info">
                       {% if detail.content %}
