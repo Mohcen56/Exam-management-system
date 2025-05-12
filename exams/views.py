@@ -41,59 +41,62 @@ def delete_grade(request):
 
 
 
+from django.db import transaction
+
 @require_POST
 def upload_grades(request, course_id):
     course = get_object_or_404(Course, id=course_id)
-    upload_type = request.POST.get('upload_type', 'regular')  # default to 'regular'
+    upload_type = request.POST.get('upload_type', 'regular')
     excel_file = request.FILES.get('grade_file')
 
     if not excel_file:
         return JsonResponse({'status': 'error', 'message': 'No file uploaded'}, status=400)
 
+    errors = []
+    success_count = 0
+
     try:
         workbook = openpyxl.load_workbook(excel_file)
-        sheet = workbook.active  # Use the first sheet
+        sheet = workbook.active
 
-        if upload_type == "resit":
-            for row in sheet.iter_rows(min_row=2, values_only=True):
-                print(f"DEBUG: Row: {row}")
-                if len(row) != 2:
-                    raise ValueError(f"Invalid row format: {row}")
+        for row_num, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+            try:
+                if upload_type == "resit":
+                    if len(row) != 2:
+                        raise ValueError(f"Invalid row format at row {row_num}: {row}")
 
-                email, resit_grade = row
-
-                try:
+                    email, resit_grade = row
                     student = StudentProfile.objects.get(user__email=email)
-                except StudentProfile.DoesNotExist:
-                    raise ValueError(f"StudentProfile not found for email: {email}")
-
-                try:
                     grade_obj = Grade.objects.get(student=student, course=course)
-                except Grade.DoesNotExist:
-                    raise ValueError(f"Grade record not found for {email} in course {course.name}")
+                    grade_obj.resit_exam_grade = resit_grade
+                    grade_obj.save()
+                    success_count += 1
+                else:
+                    if len(row) < 3:
+                        raise ValueError(f"Incomplete data at row {row_num}: {row}")
 
-                grade_obj.resit_exam_grade = resit_grade
-                grade_obj.save()
-                print(f"CONFIRM: {email} => Saved resit grade: {grade_obj.resit_exam_grade}")
+                    email, midterm, final_exam, *optional_absences = row
+                    absences = optional_absences[0] if optional_absences else 0
+                    student = StudentProfile.objects.get(user__email=email)
+                    save_grade(student, course, midterm, final_exam, absences)
+                    success_count += 1
 
-        else:
-            # Regular upload: email, midterm, final, [optional absences]
-            for row in sheet.iter_rows(min_row=2, values_only=True):
-                print(f"DEBUG: Row: {row}")
-                if len(row) < 3:
-                    raise ValueError(f"Incomplete data in row: {row}")
+            except Exception as row_error:
+                errors.append(f"Row {row_num}: {str(row_error)}")
 
-                email, midterm, final_exam, *optional_absences = row
-                absences = optional_absences[0] if optional_absences else 0
+        if errors:
+            return JsonResponse({
+                'status': 'partial_success',
+                'message': f'{success_count} rows processed successfully, {len(errors)} errors.',
+                'errors': errors
+            }, status=207)
 
-                student = get_object_or_404(StudentProfile, user__email=email)
-                save_grade(student, course, midterm, final_exam, absences)
-
-        return JsonResponse({'status': 'success'})
+        return JsonResponse({'status': 'success', 'message': f'{success_count} rows uploaded.'})
 
     except Exception as e:
         print(f"ERROR: {e}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
 
     
 def download_resit_excel(request):

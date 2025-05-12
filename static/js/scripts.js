@@ -1,4 +1,6 @@
 // scripts.js
+import Swal from "sweetalert2";
+
 // Function to get the value of a cookie by name
 function getCookie(name) {
   let cookieValue = null;
@@ -39,4 +41,4 @@ function showSuccess(message = "Success", title = "Success") {
     showConfirmButton: false,
   });
 }
-
+export { getCookie, showError, showSuccess };

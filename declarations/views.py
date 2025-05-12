@@ -220,31 +220,38 @@ def studentshedule(request):
     if not request.user.groups.filter(name='student').exists():
         return JsonResponse({'status': 'error', 'message': 'Unauthorized access.'}, status=403)
 
+    # Get the student's profile (assuming OneToOne between User and StudentProfile)
+    student_profile = request.user.studentprofile
+
     weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     schedule_by_day = {day: [] for day in weekdays}
 
-    resits = ResitExamSchedule.objects.select_related('course')
+    # Step 1: Get declared resit grades for this student
+    declared_resits = Grade.objects.filter(student=student_profile, declared_resit=True)
+
+    # Step 2: Get the course IDs for those declared resits
+    course_ids = declared_resits.values_list('course_id', flat=True)
+
+    # Step 3: Fetch only the resits that match those course IDs
+    resits = ResitExamSchedule.objects.filter(course_id__in=course_ids).select_related('course')
     contents = ResitExamContent.objects.select_related('course')
 
-    # Map content by course_id
+    # Step 4: Map contents by course_id
     content_map = {c.course_id: c for c in contents}
 
     for resit in resits:
         day = resit.date.strftime('%A')
         if day in schedule_by_day:
-            course_id = resit.course_id
-            content = content_map.get(course_id)
-            
+            content = content_map.get(resit.course_id)
             schedule_by_day[day].append({
                 'course': f"{resit.course.code} {resit.course.name}",
                 'date': resit.date.strftime('%Y-%m-%d'),
                 'time': resit.time.strftime('%H:%M') if resit.time else '',
                 'place': resit.place,
-                'content': content  # this is safe to pass to the template
+                'content': content
             })
 
     return render(request, 'studentschedule.html', {
         'weekdays': weekdays,
         'schedule_by_day': schedule_by_day
     })
-
