@@ -1,5 +1,4 @@
-import { showSuccess, showError, } from "./scripts";
-import Swal from "sweetalert2";
+
 
 
 // Add a new student via form submission
@@ -184,6 +183,3 @@ function applyResit(button) {
 }
 
 // Expose deleteStudent globally for inline onclick to work in tests
-window.deleteStudent = deleteStudent;
-
-export { addStudent, uploadExcel, deleteStudent, applyResit };

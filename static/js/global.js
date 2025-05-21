@@ -61,7 +61,7 @@ function uploadFile() {
     fetch(uploadUrl, {
       method: 'POST',
       headers: {
-        'X-CSRFToken': csrfToken
+        "X-CSRFToken": getCookie("csrftoken"),
       },
       body: formData
     })

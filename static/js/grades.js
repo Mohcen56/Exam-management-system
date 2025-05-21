@@ -1,3 +1,5 @@
+
+
 function toggleUpload(button, type, courseId) {
   const card = button.closest('.card');
   const regularUpload = card.querySelector(`#regular-upload-${courseId}`);
@@ -37,7 +39,7 @@ function uploadExcel(courseId, isResit = false) {
     fetch(`/exams/upload_grades/${courseId}/`, {
       method: "POST",
       headers: {
-        "X-CSRFToken": csrftoken,
+        "X-CSRFToken": getCookie("csrftoken"),
       },
       body: formData,
     })
